@@ -1,4 +1,5 @@
 
+
 # complaint/urls.py
 from django.urls import path
 from .views import (
@@ -55,6 +56,36 @@ urlpatterns = [
     path('caretaker/detail2/<int:detailcomp_id1>/', ComplaintDetailView.as_view()),  # Converted to DRF
     path('caretaker/search_complaint', SearchComplaintView.as_view()),  # Converted to DRF
     path('caretaker/<int:complaint_id>/feedback/', SubmitFeedbackCaretakerView.as_view()),  # Converted to DRF
-    
+    # Supervisor URLs
+    path('supervisor/lodge/', SupervisorLodgeView.as_view()),
+    path('supervisor/', SupervisorView.as_view()),
+    path('supervisor/feedback/<int:feedcomp_id>/', FeedbackSuperView.as_view()),
+    path('supervisor/caretaker_id_know_more/<int:caretaker_id>/', CaretakerIdKnowMoreView.as_view()),
+    # The following URL is commented out as per the original code
+    # path('supervisor/caretaker_id_know_more/<int:caretaker_id>/complaint_reassign_super/<int:iid>/', views.complaint_reassign_super, name='complaint_reassign_super'),
+    path('supervisor/detail/<int:detailcomp_id1>/', SupervisorComplaintDetailView.as_view(), name='detail3'),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
 ]

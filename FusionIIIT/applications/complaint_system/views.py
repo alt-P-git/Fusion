@@ -76,6 +76,18 @@ class UserComplaintView(APIView):
         serializer = StudentComplainSerializer(complaints, many=True)
         return Response(serializer.data)
 
+
+
+
+
+
+
+
+
+
+
+        
+
     def post(self, request):
         """
         Allows the user to register a new complaint.
@@ -140,6 +152,18 @@ class CaretakerFeedbackView(APIView):
             x.save()
         return Response({"success": "Feedback submitted"})
 
+
+
+
+
+
+
+
+
+
+
+
+
 # Converted to DRF APIView
 class SubmitFeedbackView(APIView):
     permission_classes = [IsAuthenticated]
@@ -165,6 +189,15 @@ class SubmitFeedbackView(APIView):
         care.rating = newrate
         care.save()
         return Response({"success": "Feedback submitted"})
+
+
+
+
+
+
+
+
+
 
 # Converted to DRF APIView
 class ComplaintDetailView(APIView):
@@ -208,6 +241,14 @@ from notification.views import complaint_system_notif
 from applications.filetracking.sdk.methods import *
 from applications.filetracking.models import *
 from operator import attrgetter
+
+
+
+
+
+
+
+
 
 # Converted to DRF APIView
 class CaretakerLodgeView(APIView):
@@ -295,6 +336,10 @@ class CaretakerLodgeView(APIView):
         serializer = StudentComplainSerializer(complaints, many=True)
         return Response(serializer.data)
 
+
+
+
+
 # Converted to DRF APIView
 class CaretakerView(APIView):
     permission_classes = [IsAuthenticated]
@@ -328,6 +373,11 @@ class FeedbackCareView(APIView):
             return Response(serializer.data)
         except StudentComplain.DoesNotExist:
             return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
 
 # Converted to DRF APIView
 class ResolvePendingView(APIView):
@@ -365,6 +415,10 @@ class ResolvePendingView(APIView):
         except StudentComplain.DoesNotExist:
             return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
 
+
+
+
+
 # Converted to DRF APIView
 class ComplaintDetailView(APIView):
     permission_classes = [IsAuthenticated]
@@ -380,6 +434,10 @@ class ComplaintDetailView(APIView):
         except StudentComplain.DoesNotExist:
             return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
 
+
+
+
+
 # Converted to DRF APIView
 class SearchComplaintView(APIView):
     permission_classes = [IsAuthenticated]
@@ -393,6 +451,9 @@ class SearchComplaintView(APIView):
         complaints = StudentComplain.objects.all()
         serializer = StudentComplainSerializer(complaints, many=True)
         return Response(serializer.data)
+
+
+
 
 # Converted to DRF APIView
 class SubmitFeedbackCaretakerView(APIView):
@@ -432,3 +493,277 @@ class SubmitFeedbackCaretakerView(APIView):
             return Response(serializer.data)
         except StudentComplain.DoesNotExist:
             return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
+
+
+
+# views.py
+
+# Import DRF classes
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+
+# Import necessary models and serializers
+from .serializers import (
+    StudentComplainSerializer,
+    CaretakerSerializer,
+    FeedbackSerializer,
+    ResolvePendingSerializer,
+)
+# Other imports remain the same
+import datetime
+from datetime import datetime, timedelta
+from django.contrib import messages
+from django.contrib.auth import authenticate, login
+from django.shortcuts import get_object_or_404, render
+from applications.globals.models import User, ExtraInfo, HoldsDesignation
+from notifications.models import Notification
+from .models import Caretaker, StudentComplain, Supervisor
+from notification.views import complaint_system_notif
+from applications.filetracking.sdk.methods import *
+from applications.filetracking.models import *
+from operator import attrgetter
+
+# Converted to DRF APIView
+class SupervisorLodgeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """
+        Allows the supervisor to lodge a new complaint.
+        """
+        # Get the current user
+        a = request.user
+        y = ExtraInfo.objects.select_related('user', 'department').filter(user=a).first()
+
+        data = request.data.copy()
+        data['complainer'] = y.id
+        data['status'] = 0
+
+        comp_type = data.get('complaint_type', '')
+        # Finish time is according to complaint type
+        complaint_finish = datetime.now() + timedelta(days=2)
+        if comp_type == 'Electricity':
+            complaint_finish = datetime.now() + timedelta(days=2)
+        elif comp_type == 'carpenter':
+            complaint_finish = datetime.now() + timedelta(days=2)
+        elif comp_type == 'plumber':
+            complaint_finish = datetime.now() + timedelta(days=2)
+        elif comp_type == 'garbage':
+            complaint_finish = datetime.now() + timedelta(days=1)
+        elif comp_type == 'dustbin':
+            complaint_finish = datetime.now() + timedelta(days=1)
+        elif comp_type == 'internet':
+            complaint_finish = datetime.now() + timedelta(days=4)
+        elif comp_type == 'other':
+            complaint_finish = datetime.now() + timedelta(days=3)
+        data['complaint_finish'] = complaint_finish
+
+        serializer = StudentComplainSerializer(data=data)
+        if serializer.is_valid():
+            complaint = serializer.save()
+
+            # Notification logic (if any)
+            location = data.get('location', '')
+            if location == "hall-1":
+                dsgn = "hall1caretaker"
+
+
+            elif location == "hall-3":
+                dsgn = "hall3caretaker"
+
+
+            elif location == "hall-4":
+                dsgn = "hall4caretaker"
+
+
+            elif location == "CC1":
+                dsgn = "cc1convener"
+
+
+            elif location == "CC2":
+                dsgn = "CC2 convener"
+
+
+            elif location == "core_lab":
+                dsgn = "corelabcaretaker"
+
+
+            elif location == "LHTC":
+                dsgn = "lhtccaretaker"
+
+
+
+            elif location == "NR2":
+                dsgn = "nr2caretaker"
+
+            elif location == "Maa Saraswati Hostel":
+                dsgn = "mshcaretaker"
+
+            elif location == "Nagarjun Hostel":
+                dsgn = "nhcaretaker"
+
+            elif location == "Panini Hostel":
+                dsgn = "phcaretaker"
+
+            else:
+                dsgn = "rewacaretaker"
+            caretaker_name = HoldsDesignation.objects.select_related('user', 'working', 'designation').get(designation__name=dsgn)
+
+            # Send notification
+            student = 1
+            message = "A New Complaint has been lodged"
+            complaint_system_notif(request.user, caretaker_name.user, 'lodge_comp_alert', complaint.id, student, message)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request):
+        """
+        Returns the history of complaints lodged by the supervisor.
+        """
+        a = request.user
+        y = ExtraInfo.objects.select_related('user', 'department').filter(user=a).first()
+        complaints = StudentComplain.objects.filter(complainer=y).order_by('-id')
+        serializer = StudentComplainSerializer(complaints, many=True)
+        return Response(serializer.data)
+
+
+
+
+# Converted to DRF APIView
+class SupervisorView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """
+        Returns the list of complaints assigned to the supervisor's area.
+        """
+        current_user = request.user
+        y = ExtraInfo.objects.select_related('user', 'department').filter(user=current_user).first()
+        try:
+            supervisor = Supervisor.objects.select_related('sup_id', 'sup_id_user', 'sup_id_department').get(sup_id=y)
+            area = supervisor.area
+            complaints = StudentComplain.objects.filter(location=area).order_by('-id')
+            serializer = StudentComplainSerializer(complaints, many=True)
+            return Response(serializer.data)
+        except Supervisor.DoesNotExist:
+            return Response({'error': 'Supervisor does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
+
+
+
+# Converted to DRF APIView
+class FeedbackSuperView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, feedcomp_id):
+        """
+        Returns the feedback details for a specific complaint for the supervisor.
+        """
+        try:
+            complaint = StudentComplain.objects.select_related('complainer', 'complainer_user', 'complainer_department').get(id=feedcomp_id)
+            caretaker = Caretaker.objects.select_related('staff_id', 'staff_id_user', 'staff_id_department').filter(area=complaint.location).first()
+            complaint_data = StudentComplainSerializer(complaint).data
+            caretaker_data = CaretakerSerializer(caretaker).data if caretaker else None
+            return Response({'complaint': complaint_data, 'caretaker': caretaker_data})
+        except StudentComplain.DoesNotExist:
+            return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
+
+
+# Converted to DRF APIView
+class CaretakerIdKnowMoreView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, caretaker_id):
+        """
+        Returns the details of a caretaker and the list of pending complaints in their area.
+        """
+        try:
+            caretaker = Caretaker.objects.select_related('staff_id', 'staff_id_user', 'staff_id_department').get(id=caretaker_id)
+            area = caretaker.area
+            pending_complaints = StudentComplain.objects.filter(location=area, status=0)
+            caretaker_data = CaretakerSerializer(caretaker).data
+            complaints_data = StudentComplainSerializer(pending_complaints, many=True).data
+            return Response({'caretaker': caretaker_data, 'pending_complaints': complaints_data})
+        except Caretaker.DoesNotExist:
+            return Response({'error': 'Caretaker not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
+
+
+# Converted to DRF APIView
+class SupervisorComplaintDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, detailcomp_id1):
+        """
+        Returns the details of a complaint for the supervisor, including caretaker info.
+        """
+        try:
+            complaint = StudentComplain.objects.select_related('complainer', 'complainer_user', 'complainer_department').get(id=detailcomp_id1)
+            caretaker = Caretaker.objects.select_related('staff_id', 'staff_id_user', 'staff_id_department').filter(area=complaint.location).first()
+            complaint_data = StudentComplainSerializer(complaint).data
+            caretaker_data = CaretakerSerializer(caretaker).data if caretaker else None
+            return Response({'complaint': complaint_data, 'caretaker': caretaker_data})
+        except StudentComplain.DoesNotExist:
+            return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
+
+
+# Converted to DRF APIView
+class SupervisorResolvePendingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, cid):
+        """
+        Allows the supervisor to resolve a pending complaint.
+        """
+        serializer = ResolvePendingSerializer(data=request.data)
+        if serializer.is_valid():
+            newstatus = serializer.validated_data['yesorno']
+            comment = serializer.validated_data.get('comment', '')
+            intstatus = 2 if newstatus == 'Yes' else 3
+            StudentComplain.objects.filter(id=cid).update(status=intstatus, comment=comment)
+
+            # Send notification to the complainer
+            try:
+                complainer_details = StudentComplain.objects.select_related('complainer', 'complainer_user', 'complainer_department').get(id=cid)
+                student = 0
+                message = "Congrats! Your complaint has been resolved"
+                complaint_system_notif(request.user, complainer_details.complainer.user, 'comp_resolved_alert', complainer_details.id, student, message)
+                return Response({'success': 'Complaint status updated'})
+            except StudentComplain.DoesNotExist:
+                return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
+
