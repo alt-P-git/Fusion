@@ -55,3 +55,34 @@ class FeedbackSerializer(serializers.Serializer):
     feedback = serializers.CharField()
     rating = serializers.IntegerField()
 
+
+
+# Serializer for Resolve Pending complaints
+class ResolvePendingSerializer(serializers.Serializer):
+    yesorno = serializers.ChoiceField(choices=[('Yes', 'Yes'), ('No', 'No')])
+    comment = serializers.CharField(required=False, allow_blank=True)
+# serializers.py
+
+from rest_framework import serializers
+from .models import StudentComplain, Caretaker, Workers
+from applications.globals.models import ExtraInfo
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
