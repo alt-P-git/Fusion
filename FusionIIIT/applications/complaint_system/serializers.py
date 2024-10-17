@@ -68,7 +68,17 @@ from .models import StudentComplain, Caretaker, Workers
 from applications.globals.models import ExtraInfo
 
 
+# Serializer for StudentComplain (already added previously)
+class StudentComplainSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentComplain
+        fields = '_all_'
 
+# Serializer for Workers (added to handle Workers model)
+class WorkersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Workers
+        fields = '_all_'
 
 
 
