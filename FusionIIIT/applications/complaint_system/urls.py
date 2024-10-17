@@ -55,10 +55,6 @@ urlpatterns = [
     path('caretaker/detail2/<int:detailcomp_id1>/', ComplaintDetailView.as_view()),  # Converted to DRF
     path('caretaker/search_complaint', SearchComplaintView.as_view()),  # Converted to DRF
     path('caretaker/<int:complaint_id>/feedback/', SubmitFeedbackCaretakerView.as_view()),  # Converted to DRF
-        # Supervisor URLs
-    path('supervisor/lodge/', SupervisorLodgeView.as_view()),
-    path('supervisor/', SupervisorView.as_view()), #check
-    path('supervisor/feedback/<int:feedcomp_id>/', FeedbackSuperView.as_view()),
-    path('supervisor/caretaker_id_know_more/<int:caretaker_id>/', CaretakerIdKnowMoreView.as_view()),
+    
     
 ]
