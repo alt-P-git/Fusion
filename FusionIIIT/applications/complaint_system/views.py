@@ -749,6 +749,11 @@ class SupervisorResolvePendingView(APIView):
             intstatus = 2 if newstatus == 'Yes' else 3
             StudentComplain.objects.filter(id=cid).update(status=intstatus, comment=comment)
 
+
+
+
+
+
             # Send notification to the complainer
             try:
                 complainer_details = StudentComplain.objects.select_related('complainer', 'complainer_user', 'complainer_department').get(id=cid)
@@ -761,6 +766,295 @@ class SupervisorResolvePendingView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+    def get(self, request, cid):
+
+
+
+        """
+        Returns the details of the complaint to be resolved.
+        """
+
+
+        try:
+            complaint = StudentComplain.objects.select_related('complainer', 'complainer_user', 'complainer_department').get(id=cid)
+            serializer = StudentComplainSerializer(complaint)
+            return Response(serializer.data)
+        
+
+        except StudentComplain.DoesNotExist:
+            return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
+
+# Converted to DRF APIView
+class SupervisorSubmitFeedbackView(APIView):
+    permission_classes = [IsAuthenticated]
+
+
+
+    def post(self, request, complaint_id):
+        """
+        Allows the supervisor to submit feedback for a complaint.
+        """
+        serializer = FeedbackSerializer(data=request.data)
+        if serializer.is_valid():
+            feedback = serializer.validated_data['feedback']
+            rating = serializer.validated_data['rating']
+            try:
+                rating = int(rating)
+            except ValueError:
+                return Response({'error': 'Invalid rating'}, status=status.HTTP_400_BAD_REQUEST)
+            StudentComplain.objects.filter(id=complaint_id).update(feedback=feedback, flag=rating)
+
+
+
+
+            # Update caretaker's rating
+            try:
+                complaint = StudentComplain.objects.select_related('complainer', 'complainer_user', 'complainer_department').get(id=complaint_id)
+                care = Caretaker.objects.filter(area=complaint.location).first()
+                rate = care.rating
+                newrate = int((rating + rate) / 2) if rate != 0 else rating
+                care.rating = newrate
+                care.save()
+                return Response({'success': 'Feedback submitted'})
+            except Caretaker.DoesNotExist:
+                return Response({'error': 'Caretaker not found'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+    def get(self, request, complaint_id):
+        """
+        Returns the complaint details for which feedback is to be submitted.
+        """
+        try:
+            complaint = StudentComplain.objects.select_related('complainer', 'complainer_user', 'complainer_department').get(id=complaint_id)
+            serializer = StudentComplainSerializer(complaint)
+            return Response(serializer.data)
+        except StudentComplain.DoesNotExist:
+            return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
+# views.py
+
+
+
+
+
+
+# Import DRF classes
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+
+
+
+
+
+# Import necessary models and serializers
+from .models import Caretaker, StudentComplain, Supervisor, Workers, SectionIncharge
+from .serializers import StudentComplainSerializer, WorkersSerializer  # Added WorkersSerializer
+from applications.globals.models import User, ExtraInfo, HoldsDesignation
+
+
+
+
+# Converted 'removew' function to DRF APIView 'RemoveWorkerView'
+class RemoveWorkerView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, work_id):
+        """
+        Allows the caretaker to remove a worker if not assigned to any complaints.
+        """
+        try:
+            worker = Workers.objects.get(id=work_id)
+            assigned_complaints = StudentComplain.objects.filter(worker_id=worker).count()
+            if assigned_complaints == 0:
+                worker.delete()
+                return Response({'success': 'Worker removed successfully'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Worker is assigned to some complaints'}, status=status.HTTP_400_BAD_REQUEST)
+        except Workers.DoesNotExist:
+            return Response({'error': 'Worker not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+    # Optionally, accept DELETE method
+    def delete(self, request, work_id):
+        return self.post(request, work_id)
+
+
+
+
+
+
+
+# Converted 'assign_worker' function to DRF APIView 'AssignWorkerView'
+class AssignWorkerView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, comp_id1):
+        """
+        Assigns a complaint to a supervisor.
+        """
+        current_user = request.user
+        y = ExtraInfo.objects.filter(user=current_user).first()
+        complaint_id = comp_id1
+
+
+
+
+
+        try:
+            complaint = StudentComplain.objects.get(id=complaint_id)
+        except StudentComplain.DoesNotExist:
+            return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        complaint_type = complaint.complaint_type
+
+        supervisors = Supervisor.objects.filter(type=complaint_type)
+        if not supervisors.exists():
+            return Response({'error': 'Supervisor does not exist for this complaint type'}, status=status.HTTP_404_NOT_FOUND)
+
+        supervisor = supervisors.first()
+        supervisor_details = ExtraInfo.objects.get(id=supervisor.sup_id.id)
+
+
+
+
+
+        # Update complaint status
+        complaint.status = 1
+        complaint.save()
+
+
+
+
+
+        # Forward file to supervisor
+        sup_designations = HoldsDesignation.objects.filter(user=supervisor_details.user_id)
+
+        files = File.objects.filter(src_object_id=complaint_id)
+
+        if not files.exists():
+            return Response({'error': 'No files associated with this complaint'}, status=status.HTTP_400_BAD_REQUEST)
+
+        supervisor_username = User.objects.get(id=supervisor_details.user_id).username
+
+        file = forward_file(
+            file_id=files.first().id,
+            receiver=supervisor_username,
+            receiver_designation=sup_designations.first().designation,
+            file_extra_JSON={},
+            remarks="",
+            file_attachment=None
+        )
+
+
+
+
+        return Response({'success': 'Complaint assigned to supervisor'}, status=status.HTTP_200_OK)
+
+    def get(self, request, comp_id1):
+        """
+        Retrieves complaint details.
+        """
+        try:
+            complaint = StudentComplain.objects.get(id=comp_id1)
+            serializer = StudentComplainSerializer(complaint)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except StudentComplain.DoesNotExist:
+            return Response({'error': 'Not a valid complaint'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
+
+
+# Converted 'deletecomplaint' function to DRF APIView 'DeleteComplaintView'
+class DeleteComplaintView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, comp_id1):
+        """
+        Deletes a complaint.
+        """
+        try:
+            complaint = StudentComplain.objects.get(id=comp_id1)
+            complaint.delete()
+            return Response({'success': 'Complaint deleted successfully'}, status=status.HTTP_200_OK)
+        except StudentComplain.DoesNotExist:
+            return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, comp_id1):
+        return self.post(request, comp_id1)
+
+
+
+
+
+
+
+# Converted 'changestatus' function to DRF APIView 'ChangeStatusView'
+class ChangeStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, complaint_id, status):
+
+
+
+        """
+        Allows the caretaker to change the status of a complaint.
+        """
+
+
+
+        try:
+            complaint = StudentComplain.objects.get(id=complaint_id)
+            if status == '3' or status == '2':
+                complaint.status = status
+                complaint.worker_id = None
+            else:
+                complaint.status = status
+            complaint.save()
+            return Response({'success': 'Complaint status updated'}, status=status.HTTP_200_OK)
+        except StudentComplain.DoesNotExist:
+            return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
+
+# Converted 'changestatussuper' function to DRF APIView 'ChangeStatusSuperView'
+class ChangeStatusSuperView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, complaint_id, status):
+        """
+        Allows the supervisor to change the status of a complaint.
+        """
+        try:
+            complaint = StudentComplain.objects.get(id=complaint_id)
+            if status == '3' or status == '2':
+                complaint.status = status
+                complaint.worker_id = None
+            else:
+                complaint.status = status
+            complaint.save()
+            return Response({'success': 'Complaint status updated'}, status=status.HTTP_200_OK)
+        except StudentComplain.DoesNotExist:
+            return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 
