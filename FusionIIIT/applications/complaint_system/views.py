@@ -861,22 +861,70 @@ class ChangeStatusSuperView(APIView):
             return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
         
 
+# class GenerateReportView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         """
+#         Generates a report of complaints for the caretaker's area.
+#         """
+#         user = request.user
+#         print(user)
+
+#         is_caretaker = hasattr(user, 'caretaker')
+
+#         if not is_caretaker:
+#             return Response({"detail": "Not authorized to generate report."}, status=403)
+
+#         # Fetch complaints for caretaker's area
+#         caretaker = get_object_or_404(Caretaker, staff_id=user.extrainfo)
+#         complaints = StudentComplain.objects.filter(location=caretaker.area)
+
+#         serializer = StudentComplainSerializer(complaints, many=True)
+#         return Response(serializer.data)
+
 class GenerateReportView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         """
-        Generates a report of complaints for the caretaker's area.
+        Generates a report of complaints for the caretaker's area, warden's area, or supervisor's type.
         """
         user = request.user
-        is_caretaker = hasattr(user, 'caretaker')
 
-        if not is_caretaker:
+        is_caretaker = hasattr(user, 'caretaker')
+        is_supervisor = False
+        is_warden = hasattr(user, 'warden')
+
+        # Check if user is a supervisor
+        try:
+            supervisor = Supervisor.objects.get(sup_id=user.extrainfo)
+            is_supervisor = True
+        except Supervisor.DoesNotExist:
+            is_supervisor = False
+
+        if not is_caretaker and not is_supervisor and not is_warden:
             return Response({"detail": "Not authorized to generate report."}, status=403)
 
-        # Fetch complaints for caretaker's area
-        caretaker = get_object_or_404(Caretaker, staff_id=user.extrainfo)
-        complaints = StudentComplain.objects.filter(location=caretaker.area)
+        complaints = None
 
+        # Generate report for supervisor
+        if is_supervisor:
+            print(f"Generating report for Supervisor {supervisor}")
+            complaints = StudentComplain.objects.filter(complaint_type=supervisor.type)
+
+        # Generate report for caretaker
+        if is_caretaker and not is_supervisor:
+            caretaker = get_object_or_404(Caretaker, staff_id=user.extrainfo)
+            complaints = StudentComplain.objects.filter(location=caretaker.area)
+
+        # if is_warden:
+        #     warden = get_object_or_404(Warden, staff_id=user.extrainfo)
+        #     if complaints:
+        #         complaints = complaints.filter(location=warden.area)
+        #     else:
+        #         complaints = StudentComplain.objects.filter(location=warden.area)
+
+        # Serialize and return the complaints
         serializer = StudentComplainSerializer(complaints, many=True)
         return Response(serializer.data)
