@@ -860,29 +860,6 @@ class ChangeStatusSuperView(APIView):
         except StudentComplain.DoesNotExist:
             return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
         
-
-# class GenerateReportView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request):
-#         """
-#         Generates a report of complaints for the caretaker's area.
-#         """
-#         user = request.user
-#         print(user)
-
-#         is_caretaker = hasattr(user, 'caretaker')
-
-#         if not is_caretaker:
-#             return Response({"detail": "Not authorized to generate report."}, status=403)
-
-#         # Fetch complaints for caretaker's area
-#         caretaker = get_object_or_404(Caretaker, staff_id=user.extrainfo)
-#         complaints = StudentComplain.objects.filter(location=caretaker.area)
-
-#         serializer = StudentComplainSerializer(complaints, many=True)
-#         return Response(serializer.data)
-
 class GenerateReportView(APIView):
     permission_classes = [IsAuthenticated]
 
