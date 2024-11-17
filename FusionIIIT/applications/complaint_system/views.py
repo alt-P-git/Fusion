@@ -350,12 +350,20 @@ class ResolvePendingView(APIView):
             StudentComplain.objects.filter(id=cid).update(status=intstatus, comment=comment)
 
             # Send notification to the complainer
-            complainer_details = StudentComplain.objects.select_related('complainer').get(id=cid)
-            student = 0
-            message = "Congrats! Your complaint has been resolved"
-            complaint_system_notif(request.user, complainer_details.complainer.user, 'comp_resolved_alert', complainer_details.id, student, message)
-
-            return Response({'success': 'Complaint status updated'})
+            try:
+                complainer_details = StudentComplain.objects.select_related('complainer').get(id=cid)
+                student = 0
+                if newstatus == 'Yes':
+                    message = "Congrats! Your complaint has been resolved"
+                    notification_type = 'comp_resolved_alert'
+                else:
+                    message = "Your complaint has been declined"
+                    notification_type = 'comp_declined_alert'
+                
+                complaint_system_notif(request.user, complainer_details.complainer.user, notification_type, complainer_details.id, student, message)
+                return Response({'success': 'Complaint status updated'})
+            except StudentComplain.DoesNotExist:
+                return Response({'error': 'Complaint not found'}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
