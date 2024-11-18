@@ -749,7 +749,7 @@ class RemoveWorkerView(APIView):
         return self.post(request, work_id)
 
 # Converted 'assign_worker' function to DRF APIView 'AssignWorkerView'
-class AssignWorkerView(APIView):
+class ForwardCompaintView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, comp_id1):

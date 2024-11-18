@@ -31,7 +31,7 @@ from .views import (
 from django.urls import path
 from .views import (
     RemoveWorkerView,
-    AssignWorkerView,
+    ForwardCompaintView,
     DeleteComplaintView,
     ChangeStatusView,
     ChangeStatusSuperView,
@@ -69,7 +69,7 @@ urlpatterns = [
     path('supervisor/<int:complaint_id>/', SupervisorSubmitFeedbackView.as_view()),
     # CRUD task URLs
     path('caretaker/worker_id_know_more/<int:work_id>/removew/', RemoveWorkerView.as_view()),
-    path('caretaker/<int:comp_id1>/', AssignWorkerView.as_view(), name='assign_worker'),
+    path('caretaker/<int:comp_id1>/', ForwardCompaintView.as_view(), name='assign_worker'),
     path('caretaker/deletecomplaint/<int:comp_id1>/', DeleteComplaintView.as_view()),
     path('caretaker/<int:complaint_id>/<str:status>/', ChangeStatusView.as_view()),
     path('supervisor/<int:complaint_id>/<str:status>/', ChangeStatusSuperView.as_view()),
